@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-import os
+import io
 
 def process_code_coverage(json_file):
     try:
@@ -40,26 +40,21 @@ def process_code_coverage(json_file):
                 # Code after the last range
                 critical_code += code[ranges_list[-1]['start']:ranges_list[-1]['end']]
                 non_critical_code += code[ranges_list[-1]['end']:]
+
             else:
                 non_critical_code = code
 
-            # Save critical code to file
-            critical_file_path = f"critical_{file_name.replace('?', '_')}"
-            try:
-                with open(critical_file_path, "w", encoding='utf-8') as f:
-                    f.write(critical_code)
-            except Exception as e:
-                raise ValueError(f"Error saving critical file: {str(e)}") from e
-            critical_files.append((critical_file_path, url))
+            # Save critical code to BytesIO
+            critical_file = io.BytesIO()
+            critical_file.write(critical_code.encode('utf-8'))
+            critical_file.seek(0)  # Move pointer to the start of file
+            critical_files.append((critical_file, file_name, url))
 
-            # Save non-critical code to file
-            non_critical_file_path = f"non_critical_{file_name.replace('?', '_')}"
-            try:
-                with open(non_critical_file_path, "w", encoding='utf-8') as f:
-                    f.write(non_critical_code)
-            except Exception as e:
-                raise ValueError(f"Error saving non-critical file: {str(e)}") from e
-            non_critical_files.append((non_critical_file_path, url))
+            # Save non-critical code to BytesIO
+            non_critical_file = io.BytesIO()
+            non_critical_file.write(non_critical_code.encode('utf-8'))
+            non_critical_file.seek(0)  # Move pointer to the start of file
+            non_critical_files.append((non_critical_file, file_name, url))
 
     return critical_files, non_critical_files
 
@@ -77,14 +72,13 @@ if uploaded_file is not None:
 
         # Display critical files with download buttons
         st.subheader("Critical Files")
-        for file_path, url in critical_files:
-            file_name = os.path.basename(file_path)
+        for file, file_name, url in critical_files:
             st.write(file_name)
             st.write(f"({url})")
             try:
                 st.download_button(
                     label="Download",
-                    data=open(file_path, 'rb').read(),
+                    data=file.getvalue(),
                     file_name=file_name
                 )
             except Exception as e:
@@ -92,14 +86,13 @@ if uploaded_file is not None:
 
         # Display non-critical files with download buttons
         st.subheader("Non-Critical Files")
-        for file_path, url in non_critical_files:
-            file_name = os.path.basename(file_path)
+        for file, file_name, url in non_critical_files:
             st.write(file_name)
             st.write(f"({url})")
             try:
                 st.download_button(
                     label="Download",
-                    data=open(file_path, 'rb').read(),
+                    data=file.getvalue(),
                     file_name=file_name
                 )
             except Exception as e:
