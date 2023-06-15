@@ -61,11 +61,12 @@ def process_code_coverage(json_file):
 # Streamlit app
 st.title("Code Coverage Processor")
 
-# File upload
+# Upload file
 uploaded_file = st.file_uploader("Upload JSON File", type="json")
 
 # Process file and display processed files
 if uploaded_file is not None:
+    st.write(uploaded_file.name)
     try:
         critical_files, non_critical_files = process_code_coverage(uploaded_file.name)
         st.success("Code coverage processed successfully.")
@@ -75,30 +76,22 @@ if uploaded_file is not None:
         for file, file_name, url in critical_files:
             st.write(file_name)
             st.write(f"({url})")
-            try:
-                st.download_button(
-                    label="Download",
-                    data=file.getvalue(),
-                    file_name=file_name
-                )
-            except Exception as e:
-                st.error(f"Error downloading critical file: {str(e)}")
+            st.download_button(
+                label="Download",
+                data=file.getvalue(),
+                file_name=file_name
+            )
 
         # Display non-critical files with download buttons
         st.subheader("Non-Critical Files")
         for file, file_name, url in non_critical_files:
             st.write(file_name)
             st.write(f"({url})")
-            try:
-                st.download_button(
-                    label="Download",
-                    data=file.getvalue(),
-                    file_name=file_name
-                )
-            except Exception as e:
-                st.error(f"Error downloading non-critical file: {str(e)}")
+            st.download_button(
+                label="Download",
+                data=file.getvalue(),
+                file_name=file_name
+            )
 
     except ValueError as e:
         st.error(f"Error processing code coverage: {str(e)}")
-    except Exception as e:
-        st.error(f"An unexpected error occurred: {str(e)}")
