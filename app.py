@@ -68,7 +68,7 @@ uploaded_file = st.file_uploader("Upload JSON File", type="json")
 if uploaded_file is not None:
     st.write(uploaded_file.name)
     try:
-        critical_files, non_critical_files = process_code_coverage(uploaded_file.name)
+        critical_files, non_critical_files = process_code_coverage(uploaded_file)
         st.success("Code coverage processed successfully.")
 
         # Display critical files with download buttons
