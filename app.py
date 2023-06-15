@@ -2,6 +2,12 @@ import streamlit as st
 import json
 import io
 import tempfile
+import base64
+
+
+
+st.markdown('<a href="https://bigmetrics.io">Made by bigmetrics.io</a>', unsafe_allow_html=True)
+
 
 def process_code_coverage(json_data):
     try:
@@ -104,3 +110,14 @@ if uploaded_file is not None:
         st.error(f"Error processing code coverage: {str(e)}")
     except Exception as e:
         st.error(f"An unexpected error occurred: {str(e)}")
+
+        
+file_ = open("coding_session.gif", "rb")
+contents = file_.read()
+data_url = base64.b64encode(contents).decode("utf-8")
+file_.close()
+
+st.markdown(
+    f'<img src="data:image/gif;base64,{data_url}" alt="cat gif" width="700">',
+    unsafe_allow_html=True,
+) 
