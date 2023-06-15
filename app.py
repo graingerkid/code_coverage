@@ -1,17 +1,13 @@
 import streamlit as st
 import json
 import io
+import tempfile
 
-def process_code_coverage(json_file):
+def process_code_coverage(json_data):
     try:
-        with open(json_file, encoding='utf-8') as json_data:
-            raw_code_coverage_list = json.load(json_data)
+        raw_code_coverage_list = json.loads(json_data)
     except json.JSONDecodeError as e:
         raise ValueError("Invalid JSON format") from e
-    except FileNotFoundError as e:
-        raise ValueError("File not found") from e
-    except Exception as e:
-        raise ValueError("Error loading JSON file") from e
 
     critical_files = []
     non_critical_files = []
@@ -44,17 +40,17 @@ def process_code_coverage(json_file):
             else:
                 non_critical_code = code
 
-            # Save critical code to BytesIO
-            critical_file = io.BytesIO()
+            # Save critical code to a temporary file
+            critical_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
             critical_file.write(critical_code.encode('utf-8'))
-            critical_file.seek(0)  # Move pointer to the start of file
-            critical_files.append((critical_file, file_name, url))
+            critical_file.close()
+            critical_files.append((critical_file.name, file_name, url))
 
-            # Save non-critical code to BytesIO
-            non_critical_file = io.BytesIO()
+            # Save non-critical code to a temporary file
+            non_critical_file = tempfile.NamedTemporaryFile(mode='wb', delete=False)
             non_critical_file.write(non_critical_code.encode('utf-8'))
-            non_critical_file.seek(0)  # Move pointer to the start of file
-            non_critical_files.append((non_critical_file, file_name, url))
+            non_critical_file.close()
+            non_critical_files.append((non_critical_file.name, file_name, url))
 
     return critical_files, non_critical_files
 
@@ -68,18 +64,21 @@ uploaded_file = st.file_uploader("Upload JSON File", type="json")
 if uploaded_file is not None:
     st.write(uploaded_file.name)
     try:
-        critical_files, non_critical_files = process_code_coverage(uploaded_file.name)
+        uploaded_json_data = uploaded_file.read().decode('utf-8')
+        critical_files, non_critical_files = process_code_coverage(uploaded_json_data)
         st.success("Code coverage processed successfully.")
 
         # Display critical files with download buttons
         st.subheader("Critical Files")
-        for file, file_name, url in critical_files:
+        for file_path, file_name, url in critical_files:
             st.write(file_name)
             st.write(f"({url})")
             try:
+                with open(file_path, 'rb') as file:
+                    file_contents = file.read()
                 st.download_button(
                     label="Download",
-                    data=file.getvalue(),
+                    data=file_contents,
                     file_name=file_name
                 )
             except Exception as e:
@@ -87,13 +86,15 @@ if uploaded_file is not None:
 
         # Display non-critical files with download buttons
         st.subheader("Non-Critical Files")
-        for file, file_name, url in non_critical_files:
+        for file_path, file_name, url in non_critical_files:
             st.write(file_name)
             st.write(f"({url})")
             try:
+                with open(file_path, 'rb') as file:
+                    file_contents = file.read()
                 st.download_button(
                     label="Download",
-                    data=file.getvalue(),
+                    data=file_contents,
                     file_name=file_name
                 )
             except Exception as e:
